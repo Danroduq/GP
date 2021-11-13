@@ -31,7 +31,7 @@ ACTG175_wide=ACTG175_wide%>%filter(arms%in%c(group1,group2))
 ACTG175_wide$z=(ACTG175_wide$arms==2)+0
 ```
 
-```{r}
+```{r,echo=FALSE}
 source("C:/Users/Administrator/Dropbox/Daniel_PhD_Research/Objective II/Analysis/Common_Functions.R")
 sequence1=seq(50,100,5)
 sequence2=seq(200,600,10)
