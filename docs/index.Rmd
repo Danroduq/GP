@@ -1,22 +1,65 @@
 ---
-title: "My HomePage"
+title: "Case Study II"
 ---
 ## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+```{r, echo=FALSE,message=FALSE}
+rm(list=ls(all=TRUE))  # removes all objects from the current workspace
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+library(LongCART)
+library(ggplot2)
+library(plotly)#used for plotting
+library(kableExtra)
+library(reshape2)
+library(survey)
+library(tableone)
+library(labelled)
 
-```{r cars}
-summary(cars)
+data("ACTG175")
 ```
 
 ## Including Plots
 
-You can also embed plots, for example:
+```{r}
+group1=c(2)
+group2=c(1)
+formula="z~karnof+race+gender+symptom+str2+cd4.0+wtkg"
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+
+ACTG175_wide=reshape(ACTG175,idvar = c("pidnum"), timevar = "time", direction = "wide", v.names=c("cd4"))
+ACTG175_wide=ACTG175_wide%>%filter(arms%in%c(group1,group2))
+ACTG175_wide$z=(ACTG175_wide$arms==2)+0
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+source("C:/Users/Administrator/Dropbox/Daniel_PhD_Research/Objective II/Analysis/Common_Functions.R")
+sequence1=seq(50,100,5)
+sequence2=seq(200,600,10)
+theta=as.matrix(expand.grid(sequence1,sequence2))
+colnames(theta)=c("Weight","Baseline_CD4")
+
+proba=compute_probas(formula=formula,Dati=ACTG175_wide,group1=group1,group2=group2,bayes=FALSE,dirichi=NA)
+predictions=apply(theta,1,FUN=checki_compliant2d,Dati=ACTG175_wide,group1=group1,group2=group2,weight_estimate=TRUE,proba=proba,normalize=TRUE)
+
+# Surface plot of estimated value function
+data_grid2=data.frame(cd4_20week=predictions,
+                      weight=theta[,1],
+                      cd4_baseline=theta[,2])
+plot_matrix2 <- t(acast(data_grid2, weight~ cd4_baseline, value.var="cd4_20week"))
+
+
+plot_ly(
+  x = as.numeric(colnames(plot_matrix2)), 
+  y = as.numeric(rownames(plot_matrix2)), 
+  z = plot_matrix2
+) %>% 
+  add_surface() %>%
+  layout(
+    title = "Estimated Value of Regime for \n Varying Cutoffs with Estimated Weights",
+    scene = list(
+      xaxis = list(title = "Weight",range=c(50,100)),
+      yaxis = list(title = "Baseline CD4", range=c(200,600)),
+      zaxis = list(title = "20 Week CD4"),
+      camera = list(eye = list(x = 1.95, y = -1.25, z = 1.25))
+    )) 
+```
