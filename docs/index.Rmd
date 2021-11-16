@@ -6,7 +6,6 @@ output:
       toc_float: true
       number_sections: true
 ---
-## R Markdown
 
 ```{r, echo=FALSE,message=FALSE}
 rm(list=ls(all=TRUE))  # removes all objects from the current workspace
@@ -23,9 +22,8 @@ library(labelled)
 data("ACTG175")
 ```
 
-## Including Plots
-
-```{r}
+# Estimated Value Functions
+```{r,echo=FALSE}
 group1=c(2)
 group2=c(1)
 formula="z~karnof+race+gender+symptom+str2+cd4.0+wtkg"
@@ -36,7 +34,8 @@ ACTG175_wide=ACTG175_wide%>%filter(arms%in%c(group1,group2))
 ACTG175_wide$z=(ACTG175_wide$arms==2)+0
 ```
 
-```{r,echo=FALSE}
+## Estimated Value Function Using Normalized IPW
+```{r,echo=FALSE,fig.cap="Estimated value of regime using normalized IPW"}
 source("C:/Users/Administrator/Dropbox/Daniel_PhD_Research/Objective II/Analysis/Common_Functions.R")
 sequence1=seq(50,100,5)
 sequence2=seq(200,600,10)
@@ -56,38 +55,34 @@ plot_matrix2 <- t(acast(data_grid2, weight~ cd4_baseline, value.var="cd4_20week"
 plot_ly(
   x = as.numeric(colnames(plot_matrix2)), 
   y = as.numeric(rownames(plot_matrix2)), 
-  z = plot_matrix2,
-  colorscale="Greys"
-) %>% 
+  z = plot_matrix2) %>% 
   add_surface(opacity=0.8) %>%
   layout(
-    title = "Estimated Value of Regime for \n Varying Cutoffs with Estimated Weights",
     scene = list(
       xaxis = list(title = "Weight (Kg)",range=c(50,100)),
       yaxis = list(title = "Baseline CD4", range=c(200,600)),
       zaxis = list(title = "20 Week CD4",range=c(371,410)),
       camera = list(eye = list(x = 1.95, y = -1.25, z = 1.25))
-    ))%>%add_trace(x=ACTG175_wide$wtkg, y=ACTG175_wide$cd4.0, z=rep(372,nrow(ACTG175_wide)), type="scatter3d", mode="markers",marker = list(size = 2,opacity=0.8,color="black"))
+    ))%>%add_trace(x=ACTG175_wide$wtkg, y=ACTG175_wide$cd4.0, z=rep(372,nrow(ACTG175_wide)), type="scatter3d", mode="markers",marker = list(size = 2,opacity=0.8,color="darkblue"))
 
 #Contour plot
-fig=plot_ly(x=~theta[,1],
-            y=~theta[,2],
-            z=~predictions, type="contour",
-            colorscale="Greys",line=list(color="black"))
-fig%>%colorbar(title = "20 Week CD4",titlefont=list(size=25),tickfont=list(size=15))%>%
-  layout(xaxis = list(title = "Baseline Weight (kg)",titlefont=list(size=25),tickfont=list(size=15)),
-         yaxis = list(title = "Baseline CD4",titlefont=list(size=25),tickfont=list(size=15)))
+# fig=plot_ly(x=~theta[,1],
+#             y=~theta[,2],
+#             z=~predictions, type="contour",
+#             colorscale="Greys",line=list(color="black"),contours = list(showlabels = TRUE))
+# fig%>%colorbar(title = "20 Week CD4",titlefont=list(size=25),tickfont=list(size=15))%>%
+#   layout(xaxis = list(title = "Baseline Weight (kg)",titlefont=list(size=25),tickfont=list(size=15)),
+#          yaxis = list(title = "Baseline CD4",titlefont=list(size=25),tickfont=list(size=15)))
 ```
 
 
-## Interpolating Normalized IPW
+## Interpolating GP with Normalized IPW
 
-```{r,echo=FALSE}
+```{r,echo=FALSE,fig.cap="Estimated value of regime using interpolating GP after an additional 25 sampled points"}
 theta=read.csv("C:/Users/Administrator/Dropbox/Daniel_PhD_Research/Objective II/Analysis/21_WeightTrue/theta_21TRUETRUE.csv")
 xhist=read.csv("C:/Users/Administrator/Dropbox/Daniel_PhD_Research/Objective II/Analysis/21_WeightTrue/xhist_21TRUeTRUE.csv")
 yhist=read.csv("C:/Users/Administrator/Dropbox/Daniel_PhD_Research/Objective II/Analysis/21_WeightTrue/yhist_21TRUETRUE.csv")
 Final_Data=read.csv("C:/Users/Administrator/Dropbox/Daniel_PhD_Research/Objective II/Analysis/21_WeightTrue/Final_Data_21TRUETRUE.csv")
-coly=c("GP","IPW")
 
 
 data_grid2=data.frame(cd4_20week=Final_Data$z[Final_Data$groupy==1],
@@ -101,42 +96,40 @@ plot_ly(
   y = as.numeric(rownames(plot_matrix2)), 
   z = plot_matrix2) %>% 
   add_surface(opacity=0.8)%>%
-  layout(title="Value of Regime for Varying Cutoffs \n Normalized IPW",
-         scene=list(xaxis = list(title="Baseline Weight (kg)"),
+  layout( scene=list(xaxis = list(title="Baseline Weight (kg)"),
                     yaxis = list(title="Baseline CD4"),
                     zaxis =  list(title="20 Week CD4"))) %>%
-  add_trace(x=Final_Data$x[Final_Data$groupy==2], y=Final_Data$y[Final_Data$groupy==2],                  z=Final_Data$z[Final_Data$groupy==2],type="scatter3d", mode="markers",size=10)
-
-
-to_table_normalized=round(t(cbind(xhist,yhist)),1)
-to_table_normalized=to_table_normalized[,c(1,5,10,15,20,25)]
-colnames(to_table_normalized)=c("+1","+5","+10","+15","+20","+25")
-rownames(to_table_normalized)=c("Weight","Baseline CD4", "20 Week CD4")
+  add_trace(x=Final_Data$x[Final_Data$groupy==2], y=Final_Data$y[Final_Data$groupy==2],                  z=Final_Data$z[Final_Data$groupy==2],type="scatter3d", mode="markers",marker = list(size = 2,opacity=0.8,color="darkblue",size=10))
 
 
 
-fig=plot_ly(x=~Final_Data$x[Final_Data$groupy==1],
-            y=~Final_Data$y[Final_Data$groupy==1],
-            z=~Final_Data$z[Final_Data$groupy==1], type="contour",
-            colorscale="Greys",line=list(color="black"), contours = list(showlabels = TRUE))
-fig%>%colorbar(title = "20 Week CD4",titlefont=list(size=25),tickfont=list(size=15))%>%
-  layout(
-         xaxis = list(title = "Baseline Weight (kg)",titlefont=list(size=25),tickfont=list(size=15)),
-         yaxis = list(title = "Baseline CD4",titlefont=list(size=25),tickfont=list(size=15)))%>%
-  add_trace(x=~Final_Data$x[Final_Data$groupy==2],y=~Final_Data$y[Final_Data$groupy==2],
-            type = "scatter", mode="markers", marker=list(color="grey"),inherit=FALSE)
+#Contour Plot
+# data_grid2=data.frame(cd4_20week=Final_Data$z[Final_Data$groupy==1],
+#                       weight=Final_Data$x[Final_Data$groupy==1],
+#                       cd4_baseline=Final_Data$y[Final_Data$groupy==1])
+# plot_matrix2 <- t(acast(data_grid2, weight~ cd4_baseline, value.var="cd4_20week"))
+
+# fig=plot_ly(x=~Final_Data$x[Final_Data$groupy==1],
+#             y=~Final_Data$y[Final_Data$groupy==1],
+#             z=~Final_Data$z[Final_Data$groupy==1], type="contour",
+#             colorscale="Greys",line=list(color="black"), contours = list(showlabels = TRUE))
+# fig%>%colorbar(title = "20 Week \n CD4",titlefont=list(size=25),tickfont=list(size=15))%>%
+#   layout(
+#          xaxis = list(title = "Baseline Weight (kg)",titlefont=list(size=25),tickfont=list(size=15)),
+#          yaxis = list(title = "Baseline CD4",titlefont=list(size=25),tickfont=list(size=15)))%>%
+#   add_trace(x=~Final_Data$x[Final_Data$groupy==2],y=~Final_Data$y[Final_Data$groupy==2],
+#             type = "scatter", mode="markers", marker=list(color="grey"),inherit=FALSE)
 
 
 ```
 
-## Homoskedastic Normalized IPW
+## Homoskedastic GP with Normalized IPW
 
-```{r, echo=FALSE}
+```{r, echo=FALSE,fig.cap="Estimated value of regime using homoskedastic GP after an additional 25 sampled points"}
 theta=read.csv("C:/Users/Administrator/Dropbox/Daniel_PhD_Research/Objective II/Analysis/21_WeightTrue/theta_Homo_21TRUETRUE.csv")
 xhist=read.csv("C:/Users/Administrator/Dropbox/Daniel_PhD_Research/Objective II/Analysis/21_WeightTrue/xhist_Homo_21TRUETRUE.csv")
 yhist=read.csv("C:/Users/Administrator/Dropbox/Daniel_PhD_Research/Objective II/Analysis/21_WeightTrue/yhist_Homo_21TRUETRUE.csv")
 Final_Data=read.csv("C:/Users/Administrator/Dropbox/Daniel_PhD_Research/Objective II/Analysis/21_WeightTrue/Final_Data_Homo_21TRUETRUE.csv")
-coly=c("GP","IPW")
 
 
 data_grid2=data.frame(cd4_20week=Final_Data$z[Final_Data$groupy==1],
@@ -150,46 +143,47 @@ plot_ly(
   y = as.numeric(rownames(plot_matrix2)), 
   z = plot_matrix2) %>% 
   add_surface(opacity=0.8)%>%
-  layout(title="Value of Regime for Varying Cutoffs \n Normalized IPW",
+  layout(
          scene=list(xaxis = list(title="Baseline Weight (kg)"),
                     yaxis = list(title="Baseline CD4"),
                     zaxis =  list(title="20 Week CD4"))) %>%
-  add_trace(x=Final_Data$x[Final_Data$groupy==2], y=Final_Data$y[Final_Data$groupy==2],                  z=Final_Data$z[Final_Data$groupy==2],type="scatter3d", mode="markers",size=10)
+  add_trace(x=Final_Data$x[Final_Data$groupy==2], y=Final_Data$y[Final_Data$groupy==2],                  z=Final_Data$z[Final_Data$groupy==2],type="scatter3d", mode="markers",marker = list(size = 2,opacity=0.8,color="darkblue",size=10))
 
 
-to_table_homo_normalized=round(t(cbind(xhist,yhist)),1)
-to_table_homo_normalized=to_table_homo_normalized[,c(1,5,10,15,20,25)]
-colnames(to_table_homo_normalized)=c("+1","+5","+10","+15","+20","+25")
-rownames(to_table_homo_normalized)=c("Weight","Baseline CD4", "20 Week CD4")
+
+#Contour Plot
+# data_grid2=data.frame(cd4_20week=Final_Data$z[Final_Data$groupy==1],
+#                       weight=Final_Data$x[Final_Data$groupy==1],
+#                       cd4_baseline=Final_Data$y[Final_Data$groupy==1])
+# plot_matrix2 <- t(acast(data_grid2, weight~ cd4_baseline, value.var="cd4_20week"))
 
 
-fig=plot_ly(x=~Final_Data$x[Final_Data$groupy==1],
-            y=~Final_Data$y[Final_Data$groupy==1],
-            z=~Final_Data$z[Final_Data$groupy==1], type="contour",
-            colorscale="Greys",line=list(color="black"), contours = list(showlabels = TRUE))
-fig%>%colorbar(title = "20 Week CD4",titlefont=list(size=25),tickfont=list(size=15))%>%
-  layout(xaxis = list(title = "Baseline Weight (kg)",titlefont=list(size=25),tickfont=list(size=15)),
-         yaxis = list(title = "Baseline CD4",titlefont=list(size=25),tickfont=list(size=15)))%>%
-  add_trace(x=~Final_Data$x[Final_Data$groupy==2],y=~Final_Data$y[Final_Data$groupy==2],
-            type = "scatter", mode="markers", marker=list(color="grey"),inherit=FALSE)
+# fig=plot_ly(x=~Final_Data$x[Final_Data$groupy==1],
+#             y=~Final_Data$y[Final_Data$groupy==1],
+#             z=~Final_Data$z[Final_Data$groupy==1], type="contour",
+#             colorscale="Greys",line=list(color="black"), contours = list(showlabels = TRUE))
+# fig%>%colorbar(title = "20 Week \n CD4",titlefont=list(size=25),tickfont=list(size=15))%>%
+#   layout(xaxis = list(title = "Baseline Weight (kg)",titlefont=list(size=25),tickfont=list(size=15)),
+#          yaxis = list(title = "Baseline CD4",titlefont=list(size=25),tickfont=list(size=15)))%>%
+#   add_trace(x=~Final_Data$x[Final_Data$groupy==2],y=~Final_Data$y[Final_Data$groupy==2],
+#             type = "scatter", mode="markers", marker=list(color="grey"),inherit=FALSE)
 
 ```
 
 
-## Heteroskedstic Normalized IPW
+## Heteroskedstic GP Normalized IPW
 
-```{r,echo=FALSE,fig.cap="This is a test"}
+```{r,echo=FALSE,fig.cap="Estimated value of regime using heteroskedastic GP after an additional 25 sampled points"}
 theta=read.csv("C:/Users/Administrator/Dropbox/Daniel_PhD_Research/Objective II/Analysis/21_WeightTrue/theta_Hetero_21TRUETRUE.csv")
 xhist=read.csv("C:/Users/Administrator/Dropbox/Daniel_PhD_Research/Objective II/Analysis/21_WeightTrue/xhist_Hetero_21TRUETRUE.csv")
 yhist=read.csv("C:/Users/Administrator/Dropbox/Daniel_PhD_Research/Objective II/Analysis/21_WeightTrue/yhist_Hetero_21TRUETRUE.csv")
 Final_Data=read.csv("C:/Users/Administrator/Dropbox/Daniel_PhD_Research/Objective II/Analysis/21_WeightTrue/Final_Data_Hetero_21TRUETRUE.csv")
-coly=c("GP","IPW")
 
 
 data_grid2=data.frame(cd4_20week=Final_Data$z[Final_Data$groupy==1],
                       weight=Final_Data$x[Final_Data$groupy==1],
                       cd4_baseline=Final_Data$y[Final_Data$groupy==1])
-plot_matrix2 <- t(acast(data_grid2, weight~ cd4_baseline, value.var="cd4_20week"))
+plot_matrix2 <- t(acast(data_grid2, weight~ cd4_baseline, value.var="cd4_20week",marker = list(size = 2,opacity=0.8,color="darkblue",size=10)))
 
 
 plot_ly(
@@ -197,32 +191,23 @@ plot_ly(
   y = as.numeric(rownames(plot_matrix2)), 
   z = plot_matrix2) %>% 
   add_surface(opacity=0.8)%>%
-  layout(title="Value of Regime for Varying Cutoffs \n Normalized IPW",
-         scene=list(xaxis = list(title="Baseline Weight (kg)"),
-                    yaxis = list(title="Baseline CD4",titlefont=list(size=25),tickfont=list(size=15)),
-                    zaxis =  list(title="20 Week CD4",titlefont=list(size=25),tickfont=list(size=15)))) %>%
-  add_trace(x=Final_Data$x[Final_Data$groupy==2], y=Final_Data$y[Final_Data$groupy==2],                  z=Final_Data$z[Final_Data$groupy==2],type="scatter3d", mode="markers",size=10)
-
-```
-
-```{r,echo=FALSE}
-to_table_hetero_normalized=round(t(cbind(xhist,yhist)),1)
-to_table_hetero_normalized=to_table_hetero_normalized[,c(1,5,10,15,20,25)]
-colnames(to_table_hetero_normalized)=c("+1","+5","+10","+15","+20","+25")
-rownames(to_table_hetero_normalized)=c("Weight","Baseline CD4", "20 Week CD4")
-
-
-
-fig=plot_ly(x=~Final_Data$x[Final_Data$groupy==1],
-            y=~Final_Data$y[Final_Data$groupy==1],
-            z=~Final_Data$z[Final_Data$groupy==1], type="contour",
-            colorscale="Greys",line=list(color="black"), contours = list(showlabels = TRUE))
-fig%>%colorbar(title = "20 Week CD4",titlefont=list(size=25),tickfont=list(size=15))%>%
   layout(
-         xaxis = list(title = "Baseline Weight (kg)"),
-         yaxis = list(title = "Baseline CD4"))%>%
-  add_trace(x=~Final_Data$x[Final_Data$groupy==2],y=~Final_Data$y[Final_Data$groupy==2],
-            type = "scatter", mode="markers", marker=list(color="grey"),inherit=FALSE)
+         scene=list(xaxis = list(title="Baseline Weight (kg)"),
+                    yaxis = list(title="Baseline CD4"),
+                    zaxis =  list(title="20 Week CD4"))) %>%
+  add_trace(x=Final_Data$x[Final_Data$groupy==2], y=Final_Data$y[Final_Data$groupy==2],                  z=Final_Data$z[Final_Data$groupy==2],type="scatter3d", mode="markers",marker = list(size = 2,opacity=0.8,color="darkblue",size=10))
+
+# Contour Plot
+# fig=plot_ly(x=~Final_Data$x[Final_Data$groupy==1],
+#             y=~Final_Data$y[Final_Data$groupy==1],
+#             z=~Final_Data$z[Final_Data$groupy==1], type="contour",
+#             colorscale="Greys",line=list(color="black"), contours = list(showlabels = TRUE))
+# fig%>%colorbar(title = "20 Week \n CD4",titlefont=list(size=25),tickfont=list(size=15))%>%
+#   layout(
+#          xaxis = list(title = "Baseline Weight (kg)",titlefont=list(size=25),tickfont=list(size=15)),
+#          yaxis = list(title = "Baseline CD4",titlefont=list(size=25),tickfont=list(size=15)))%>%
+#   add_trace(x=~Final_Data$x[Final_Data$groupy==2],y=~Final_Data$y[Final_Data$groupy==2],
+#             type = "scatter", mode="markers", marker=list(color="grey"),inherit=FALSE)
 ```
 
 
