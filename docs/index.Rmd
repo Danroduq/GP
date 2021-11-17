@@ -168,7 +168,7 @@ Final_Data=rbind(Data1,Data2)
 coly=c("MSM","IPW Grid")
 # write.csv(Final_Data,"C:/Users/Administrator/Dropbox/Daniel_PhD_Research/Objective II/Analysis/Final_Data_MSM.csv", row.names=FALSE)
 
-plot_ly(x=Final_Data$x, y=Final_Data$y, z=Final_Data$z, type="scatter3d", mode="markers",color=coly[Final_Data$groupy],colors=c("blue","red"),marker = list(size = 4))%>%
+plot_ly(x=Final_Data$x, y=Final_Data$y, z=Final_Data$z, type="scatter3d", mode="markers",color=coly[Final_Data$groupy],colors=c("blue","red"),marker = list(size = 2))%>%
   layout(scene = list(xaxis = list(title = "Baseline Weight",zerolinecolor = '#ffff'),
                  yaxis = list(title = "Baseline CD4"),
                  zaxis = list(title = "20 Week CD4")))
